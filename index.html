@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 <head>
   <meta charset="UTF-8">
   <title>Traspaso entre Almacenes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <script type="module">
- import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getFirestore, collection, query, where, getDocs, addDoc, Timestamp
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     // ---------------- FIREBASE CONFIG ----------------
     const firebaseConfig = {
@@ -27,10 +25,6 @@
     let resultadosBusqueda = [];
     let paginaActual = 0;
     const porPagina = 10;
-
-    // ---------------- TELEGRAM CONFIG ----------------
-    const BOT_TOKEN = "8272633411:AAE6uKTpEtPW--IPk6ufix_CDGJ0dH6ru4Q";
-    const CHAT_ID   = "6617988297";
 
     // ---------------- IndexedDB ----------------
     function openDB() {
@@ -70,12 +64,14 @@
       try {
         const ultimaSyncStr = localStorage.getItem("ultimaSync") || "2000-01-01T00:00:00.000Z";
         const ultimaSyncTs = Timestamp.fromDate(new Date(ultimaSyncStr));
-const q = query(
-  collection(db, "productos"),
-  where("activo", "==", true),
-  where("updatedAt", ">", ultimaSyncTs)
-);
-  const snap = await getDocs(q);  // 👈 usar 'q'
+
+        const q = query(
+          collection(db, "productos"),
+          where("activo", "==", true),
+          where("updatedAt", ">", ultimaSyncTs)
+        );
+
+        const snap = await getDocs(q);
 
         if (!snap.empty) {
           const lista = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -93,19 +89,13 @@ const q = query(
     // ---------------- BÚSQUEDAS ----------------
     async function buscarPorNombre() {
       const termino = document.getElementById("busquedaNombre").value.trim().toLowerCase();
-      if (!termino) {
-        document.getElementById("listaResultados").innerHTML = "";
-        return;
-      }
-
       const productos = await getAllProductos();
-      resultadosBusqueda = productos.filter(p =>
-        p.concepto && p.concepto.toLowerCase().includes(termino)
-      );
+      resultadosBusqueda = termino
+        ? productos.filter(p => p.concepto && p.concepto.toLowerCase().includes(termino))
+        : productos; // 👈 si no escribe nada, lista todo
 
       paginaActual = 0;
       mostrarPagina();
-      document.getElementById("modalResultados").style.display = "block";
     }
 
     function mostrarPagina() {
@@ -142,80 +132,76 @@ const q = query(
         mostrarPagina();
       }
     }
-// ---------------- EQUIVALENCIAS ----------------
-async function buscarEnEquivalencias(codigoInput) {
-  const codigoStr = String(codigoInput).trim();
-  const q = query(
-    collection(db, "productos"),
-    where("codigosEquivalentes", "array-contains", codigoStr)
-  );
-  const snap = await getDocs(q);
-  if (!snap.empty) {
-    const docu = snap.docs[0];
-    return { id: docu.id, ...docu.data() };
-  }
-  return null;
-}
+
+    // ---------------- EQUIVALENCIAS ----------------
+    async function buscarEnEquivalencias(codigoInput) {
+      const codigoStr = String(codigoInput).trim();
+      const q = query(
+        collection(db, "productos"),
+        where("codigosEquivalentes", "array-contains", codigoStr)
+      );
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const docu = snap.docs[0];
+        return { id: docu.id, ...docu.data() };
+      }
+      return null;
+    }
 
     // ---------------- PRODUCTO ----------------
-async function buscarPorCodigo() {
-  const codigo = document.getElementById("buscador").value.trim();
-  if (!codigo) return;
+    async function buscarPorCodigo() {
+      const codigo = document.getElementById("buscador").value.trim();
+      if (!codigo) return;
 
-  console.log("🔎 Buscando código:", codigo);
+      console.log("🔎 Buscando código:", codigo);
 
-  // 1. Buscar en cache (IndexedDB)
-  const productos = await getAllProductos();
-  let encontrado = productos.find(p => String(p.codigoBarra) === String(codigo));
+      // 1. Buscar en cache (IndexedDB)
+      const productos = await getAllProductos();
+      let encontrado = productos.find(p => String(p.codigoBarra) === String(codigo));
 
-  // 2. Si no está en cache, buscar en Firestore por codigoBarra
-  if (!encontrado) {
-    console.log("⚠️ No está en cache, buscando en Firestore...");
-    const qProd = query(
-      collection(db, "productos"),
-      where("codigoBarra", "==", codigo),
-      where("activo", "==", true)
-    );
-    const snap = await getDocs(qProd);
-    if (!snap.empty) {
-      encontrado = { id: snap.docs[0].id, ...snap.docs[0].data() };
-      await saveProductos([encontrado]); // lo guardo en cache
+      // 2. Si no está en cache, buscar en Firestore por codigoBarra
+      if (!encontrado) {
+        console.log("⚠️ No está en cache, buscando en Firestore...");
+        const qProd = query(
+          collection(db, "productos"),
+          where("codigoBarra", "==", codigo),
+          where("activo", "==", true)
+        );
+        const snap = await getDocs(qProd);
+        if (!snap.empty) {
+          encontrado = { id: snap.docs[0].id, ...snap.docs[0].data() };
+          await saveProductos([encontrado]);
+        }
+      }
+
+      // 3. Si tampoco se encontró, buscar en equivalentes
+      if (!encontrado) {
+        console.log("🔄 Buscando en equivalentes...");
+        encontrado = await buscarEnEquivalencias(codigo);
+        if (encontrado) {
+          await saveProductos([encontrado]);
+        }
+      }
+
+      // 4. Mostrar resultado
+      if (encontrado) {
+        seleccionarProducto(encontrado);
+      } else {
+        document.getElementById("preview").innerText = "❌ No encontrado";
+        document.getElementById("codigoSel").value = "";
+        document.getElementById("conceptoSel").value = "";
+        document.getElementById("precioSel").value = "";
+      }
+
+      document.getElementById("buscador").value = "";
     }
-  }
-
-  // 3. Si tampoco se encontró, buscar en equivalentes
-  if (!encontrado) {
-    console.log("🔄 Buscando en equivalentes...");
-    encontrado = await buscarEnEquivalencias(codigo);
-    if (encontrado) {
-      await saveProductos([encontrado]);
-    }
-  }
-
-  // 4. Mostrar resultado
-  if (encontrado) {
-    console.log("✅ Producto encontrado:", encontrado);
-    seleccionarProducto(encontrado);
-  } else {
-    console.log("❌ Código no encontrado en Firestore ni en cache");
-    document.getElementById("preview").innerText = "❌ No encontrado";
-    document.getElementById("codigoSel").value = "";
-    document.getElementById("conceptoSel").value = "";
-    document.getElementById("precioSel").value = "";
-  }
-
-  document.getElementById("buscador").value = "";
-}
 
     function seleccionarProducto(data) {
       document.getElementById("codigoSel").value = data.codigoBarra;
       document.getElementById("conceptoSel").value = data.concepto || "";
       document.getElementById("precioSel").value = data.precioPublico ?? 0;
       document.getElementById("preview").innerText = `${data.concepto} — $${data.precioPublico}`;
-
-      const cantidadInput = document.getElementById("cantidad");
-      cantidadInput.focus();
-      cantidadInput.select();
+      document.getElementById("cantidad").focus();
     }
 
     function agregarItem() {
@@ -259,222 +245,47 @@ async function buscarPorCodigo() {
       renderTabla();
     }
 
-    // ---------------- FINALIZAR TRASPASO ----------------
-    async function finalizarTraspaso() {
-      const ruta = document.getElementById("ruta").value;
-      const vendedor = document.getElementById("vendedor").value || "No asignado";
-      if (carrito.length === 0 || !ruta) {
-        alert("Faltan datos");
-        return;
-      }
-
-      const folio = generarFolio(ruta);
-
-      // Guardar en Firestore
-      await addDoc(collection(db, `almacenes/${ruta}/entradas`), { folio, vendedor, items: carrito, createdAt: Timestamp.now() });
-      await addDoc(collection(db, `almacenes/ALMACENCENTRALPDD/salidas`), { folio, vendedor, items: carrito, createdAt: Timestamp.now() });
-
-      // Enviar a Telegram
-      await enviarTelegram(folio, ruta, vendedor, carrito);
-
-      // Abrir comprobante imprimible
-      abrirComprobante(folio, ruta, vendedor, carrito);
-
-      carrito = [];
-      renderTabla();
-    }
-
-    function generarFolio(ruta) {
-      const hoy = new Date();
-      const dd = String(hoy.getDate()).padStart(2, "0");
-      const mm = String(hoy.getMonth() + 1).padStart(2, "0");
-      const yy = String(hoy.getFullYear()).slice(-2);
-      const fecha = `${dd}${mm}${yy}`;
-      const consecutivo = String(Math.floor(Math.random() * 999)).padStart(3, "0");
-      return `${ruta}-${fecha}-${consecutivo}`;
-    }
-
-    function dividirEnBloques(array, size) {
-      const bloques = [];
-      for (let i = 0; i < array.length; i += size) {
-        bloques.push(array.slice(i, i + size));
-      }
-      return bloques;
-    }
-
-    async function enviarTelegram(folio, destino, vendedor, items) {
-      const total = items.length;
-      const bloques = dividirEnBloques(items, 20);
-
-      for (let i = 0; i < bloques.length; i++) {
-        let mensaje = `📦 *Nuevo Traspaso*\n`;
-        if (i === 0){
-          mensaje += `Folio: ${folio}\nDestino: ${destino}\nVendedor: ${vendedor}\nTotal de productos: ${total}\n`;
-        }
-        mensaje += `📋 *Bloque ${i+1}/${bloques.length}:*\n`;
-        bloques[i].forEach(it=>{
-          mensaje += `- ${it.cantidad} x ${it.concepto}\n`;
-        });
-
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: CHAT_ID, text: mensaje, parse_mode: "Markdown" })
-        });
-      }
-    }
-
-    function abrirComprobante(folio, ruta, vendedor, items) {
-      const fecha = new Date().toLocaleDateString();
-      let tabla = "";
-      items.forEach(it=>{
-        tabla += `<tr><td>${it.codigo}</td><td>${it.concepto}</td><td>${it.cantidad}</td><td>$${it.precio}</td></tr>`;
-      });
-
-      const win = window.open("", "_blank");
-      win.document.write(`
-        <html><head><title>Comprobante ${folio}</title>
-        <style>
-         body{
-  font-family:'Poppins',sans-serif;
-  margin:0;
-  background:var(--bg-grad);
-  min-height:100vh;
-  color:white;
-}
-          h1{text-align:center;color:#003366;}
-          .folio{font-size:24px;font-weight:bold;color:#b30000;text-align:center;border:2px dashed #b30000;margin:10px;padding:5px;}
-          table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:14px;
-  min-width:760px;
-}
-th,td{
-  padding:10px;
-  border:1px solid #ccc;
-  text-align:center;
-}
-th{
-  background-color:var(--azul);
-  color:white;
-  position:sticky;
-  top:0;
-}
-
-          .firmas{margin-top:40px;display:flex;justify-content:space-between;}
-          .firma{width:45%;text-align:center;}
-          .linea{margin-top:60px;border-top:1px solid #000;}
-        </style></head><body>
-        <h1>📦 PROVEEDORA DE DULCES Y DESECHABLES</h1>
-        <h2 style="text-align:center">Comprobante de Traspaso</h2>
-        <div class="folio">Folio: ${folio}</div>
-        <p><b>Fecha:</b> ${fecha}<br><b>Destino:</b> ${ruta}<br><b>Vendedor:</b> ${vendedor}<br><b>Total:</b> ${items.length}</p>
-        <table><thead><tr><th>Código</th><th>Producto</th><th>Cantidad</th><th>Precio Público</th></tr></thead><tbody>
-        ${tabla}
-        </tbody></table>
-        <div class="firmas">
-          <div class="firma"><div class="linea"></div>Entregó (Administrador)</div>
-          <div class="firma"><div class="linea"></div>Recibió (Vendedor)</div>
-        </div>
-        <button onclick="window.print()">🖨️ Imprimir</button>
-        <div class="wm-logo"><img src="logo-proveedora.webp" alt=""></div>
-        </body></html>
-      `);
-      win.document.close();
-    }
-
-    // ---------------- RUTA -> VENDEDOR ----------------
-    async function cargarVendedor() {
-      const ruta = document.getElementById("ruta").value;
-      console.log("🔎 Buscando vendedor para ruta:", ruta);
-      if (!ruta) return;
-
-      const qUsr = query(
-        collection(db,"usuarios_ruta"),
-        where("rutaId","==",ruta),
-        where("activo","==",true)
-      );
-
-      const snap = await getDocs(qUsr);
-
-      if (!snap.empty){
-        // si hay varios, uso el primero
-        const data = snap.docs[0].data();
-        console.log("✅ Vendedor encontrado:", data);
-        document.getElementById("vendedor").value = data.nombre || "No asignado";
-      } else {
-        console.warn("⚠️ No se encontró vendedor para:", ruta);
-        document.getElementById("vendedor").value = "No asignado";
-      }
-    }
-
-    function cerrarModal(){
+    function cerrarModal() {
       document.getElementById("modalResultados").style.display = "none";
     }
 
-// ---------------- INIT ----------------
-document.addEventListener("DOMContentLoaded", async ()=>{
-  await syncProductos();
-  document.getElementById("buscador").focus();
+    // ---------------- INIT ----------------
+    document.addEventListener("DOMContentLoaded", async () => {
+      await syncProductos();
+      document.getElementById("buscador").focus();
 
-  // Cambio de ruta → carga vendedor
-  document.getElementById("ruta").addEventListener("change", cargarVendedor);
+      document.getElementById("btnBuscarNombre").addEventListener("click", () => {
+        document.getElementById("modalResultados").style.display = "block";
+        document.getElementById("busquedaNombre").focus();
+        buscarPorNombre();
+      });
 
-  // Abrir modal de búsqueda y ejecutar búsqueda inicial
-  document.getElementById("btnBuscarNombre").addEventListener("click", ()=>{
-    document.getElementById("modalResultados").style.display = "block";
-    document.getElementById("busquedaNombre").focus();
-    buscarPorNombre();   // 👈 ejecuta búsqueda al abrir modal
-  });
+      document.getElementById("btnBuscarCodigo").addEventListener("click", buscarPorCodigo);
+      document.getElementById("cerrarModal").addEventListener("click", cerrarModal);
+      document.getElementById("btnAnterior").addEventListener("click", anteriorPagina);
+      document.getElementById("btnSiguiente").addEventListener("click", siguientePagina);
+      document.getElementById("btnTraspaso").addEventListener("click", () => alert("Finalizar traspaso aún no implementado en este snippet"));
+      document.getElementById("busquedaNombre").addEventListener("input", buscarPorNombre);
+      document.getElementById("btnAgregar").addEventListener("click", agregarItem);
 
-  // Buscar por código
-  document.getElementById("btnBuscarCodigo").addEventListener("click", buscarPorCodigo);
+      document.getElementById("buscador").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); buscarPorCodigo(); }
+      });
+      document.getElementById("cantidad").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); agregarItem(); }
+      });
 
-  // Cerrar modal y limpiar
-  document.getElementById("cerrarModal").addEventListener("click", ()=>{
-    cerrarModal();
-    document.getElementById("busquedaNombre").value = "";
-    document.getElementById("listaResultados").innerHTML = "";
-  });
-
-  // Paginación
-  document.getElementById("btnAnterior").addEventListener("click", anteriorPagina);
-  document.getElementById("btnSiguiente").addEventListener("click", siguientePagina);
-
-  // Finalizar traspaso
-  document.getElementById("btnTraspaso").addEventListener("click", finalizarTraspaso);
-
-  // Buscar mientras escribes en el input de nombre
-  document.getElementById("busquedaNombre").addEventListener("input", buscarPorNombre);
-
-  // Agregar producto a la lista
-  document.getElementById("btnAgregar").addEventListener("click", agregarItem);
-
-  // Enter en buscador de código → busca producto
-  document.getElementById("buscador").addEventListener("keypress",(e)=>{
-    if(e.key==="Enter"){ e.preventDefault(); buscarPorCodigo(); }
-  });
-
-  // Enter en cantidad → agrega item
-  document.getElementById("cantidad").addEventListener("keypress",(e)=>{
-    if(e.key==="Enter"){ e.preventDefault(); agregarItem(); }
-  });
-
-  // Exponer funciones para botones inline (por compatibilidad)
-  window.agregarItem  = agregarItem;
-  window.eliminarItem = eliminarItem;
-});
+      window.agregarItem = agregarItem;
+      window.eliminarItem = eliminarItem;
+    });
   </script>
 
   <style>
 :root {
   --azul:#00416A;
   --resalte:#0c6cbd;
-  --ok:#1e8e3e;
   --bg-grad:linear-gradient(to right,#00416A,#E4E5E6);
-  --card: rgba(255,255,255,.85);   /* 👈 más transparencia */
-  --muted:rgba(0,0,0,.55);
+  --card: rgba(255,255,255,.85);
   --shadow:0 6px 18px rgba(0,0,0,.18);
   --radius:14px;
 }
@@ -491,7 +302,7 @@ body {
   max-width:900px;
   margin:30px auto;
   background:var(--card);
-  backdrop-filter: blur(8px);   /* 👈 difumina logo debajo */
+  backdrop-filter: blur(8px);
   color:#222;
   padding:20px;
   border-radius:var(--radius);
@@ -500,29 +311,14 @@ body {
   z-index:1;
 }
 
-h2 {
-  color: var(--azul);
-  margin-top:0;
-}
-
+h2 { color: var(--azul); margin-top:0; }
 label { display:block; margin-top:10px; font-weight:600; }
 input,select { padding:8px; border:1px solid #ccc; border-radius:6px; }
 #buscador { width:70%; }
 
-table {
-  width:100%;
-  border-collapse:collapse;
-  margin-top:10px;
-}
-th,td {
-  border:1px solid #ccc;
-  padding:8px;
-  text-align:center;
-}
-th {
-  background: var(--azul);
-  color:white;
-}
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+th,td { border:1px solid #ccc; padding:8px; text-align:center; }
+th { background: var(--azul); color:white; }
 
 button {
   margin-top:10px;
@@ -531,18 +327,8 @@ button {
   border-radius:6px;
   cursor:pointer;
 }
-
-.boton, .btn {
-  background:var(--resalte);
-  color:white;
-  font-weight:600;
-  padding:10px 16px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-  transition:background .3s;
-}
-.boton:hover, .btn:hover { background:#084f92; }
+.btn { background:var(--resalte); color:white; font-weight:600; border-radius:10px; }
+.btn:hover { background:#084f92; }
 
 .modal {
   display:none; position:fixed; z-index:1000;
@@ -570,18 +356,16 @@ button {
 .wm-logo {
   position:fixed;
   inset:0;
-  z-index:-1;       /* 👈 queda al fondo */
+  z-index:-1;
   pointer-events:none;
 }
 .wm-logo img {
   position:absolute; top:50%; left:50%;
-  transform: translate(-50%, -50%) rotate(0deg);
+  transform: translate(-50%, -50%);
   width: clamp(600px,80vmin,1400px);
-  opacity:.12;                   /* 👈 transparencia */
-  mix-blend-mode: normal;
+  opacity:.12;
   filter: grayscale(20%) saturate(120%) contrast(105%);
 }
-
   </style>
 </head>
 <body>
@@ -597,12 +381,10 @@ button {
           <option value="Almacen_Ruta_2">Ruta 2</option>
         </select>
       </div>
-
       <div>
         <label>Vendedor:</label>
         <input type="text" id="vendedor" readonly />
       </div>
-
       <div>
         <label>Captura producto:</label>
         <div class="buscador-group">
@@ -610,13 +392,11 @@ button {
           <button id="btnBuscarCodigo">✔️ Capturar</button>
           <button id="btnBuscarNombre">🔍 Buscar</button>
         </div>
-
         <div id="preview" style="margin:10px 0;font-weight:bold;color:#003366;"></div>
         <input type="hidden" id="codigoSel">
         <input type="hidden" id="conceptoSel">
         <input type="hidden" id="precioSel">
       </div>
-
       <div>
         <label>Cantidad:</label>
         <div class="cantidad-group">
@@ -650,7 +430,7 @@ button {
 
   <div class="footer">Powered by <b>PROVSOFT</b></div>
   <div class="wm-logo">
-  <img src="logo-proveedora.webp" alt="Logo Proveedora">
-</div>
+    <img src="./logo-proveedora.webp" alt="Logo Proveedora">
+  </div>
 </body>
 </html>
