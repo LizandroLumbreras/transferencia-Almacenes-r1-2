@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 <head>
   <meta charset="UTF-8">
   <title>Traspaso entre Almacenes</title>
@@ -334,12 +335,33 @@ async function buscarPorCodigo() {
       win.document.write(`
         <html><head><title>Comprobante ${folio}</title>
         <style>
-          body{font-family:Arial;margin:20px;}
+         body{
+  font-family:'Poppins',sans-serif;
+  margin:0;
+  background:var(--bg-grad);
+  min-height:100vh;
+  color:white;
+}
           h1{text-align:center;color:#003366;}
           .folio{font-size:24px;font-weight:bold;color:#b30000;text-align:center;border:2px dashed #b30000;margin:10px;padding:5px;}
-          table{width:100%;border-collapse:collapse;margin-top:15px;}
-          th,td{border:1px solid #ccc;padding:6px;}
-          th{background:#eee;}
+          table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:14px;
+  min-width:760px;
+}
+th,td{
+  padding:10px;
+  border:1px solid #ccc;
+  text-align:center;
+}
+th{
+  background-color:var(--azul);
+  color:white;
+  position:sticky;
+  top:0;
+}
+
           .firmas{margin-top:40px;display:flex;justify-content:space-between;}
           .firma{width:45%;text-align:center;}
           .linea{margin-top:60px;border-top:1px solid #000;}
@@ -356,6 +378,7 @@ async function buscarPorCodigo() {
           <div class="firma"><div class="linea"></div>Recibió (Vendedor)</div>
         </div>
         <button onclick="window.print()">🖨️ Imprimir</button>
+        <div class="wm-logo"><img src="logo-proveedora.webp" alt=""></div>
         </body></html>
       `);
       win.document.close();
@@ -430,7 +453,17 @@ async function buscarPorCodigo() {
 
   <style>
     body{font-family:Arial,sans-serif;margin:20px;background:#f5f5f5;}
-    .panel{max-width:800px;margin:auto;background:white;padding:20px;border-radius:10px;box-shadow:0 3px 8px rgba(0,0,0,.15);}
+    .panel{
+  max-width:900px;
+  margin:30px auto;
+  background:var(--card);
+  color:#222;
+  padding:20px;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  position:relative;
+  z-index:1;
+}
     label{display:block;margin-top:10px;font-weight:bold;}
     input,select{padding:8px;border:1px solid #ccc;border-radius:6px;}
     #buscador{width:70%;}
@@ -439,7 +472,20 @@ async function buscarPorCodigo() {
     th,td{border:1px solid #ccc;padding:6px;text-align:left;}
     th{background:#eee;}
     button{margin-top:10px;padding:10px 16px;border:none;border-radius:6px;cursor:pointer;}
-    .btn{background:#007bff;color:white;}
+    .boton, .btn{
+  background:var(--resalte);
+  color:white;
+  font-weight:600;
+  padding:10px 16px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  transition:background .3s;
+}
+.boton:hover, .btn:hover{
+  background:#084f92;
+}
+
     .modal{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);}
     .modal-content{background:#fff;margin:5% auto;padding:20px;border-radius:10px;width:80%;max-width:600px;max-height:70%;overflow-y:auto;}
     .close{float:right;font-size:28px;cursor:pointer;}
@@ -450,6 +496,29 @@ async function buscarPorCodigo() {
     .buscador-group,.cantidad-group{display:flex;gap:8px;align-items:center;}
     .buscador-group input{flex:1;}
     .cantidad-group input{width:80px;}
+    
+    :root{
+  --azul:#00416A;
+  --resalte:#0c6cbd;
+  --ok:#1e8e3e;
+  --bg-grad:linear-gradient(to right,#00416A,#E4E5E6);
+  --card: rgba(255,255,255,.9);
+  --muted:rgba(0,0,0,.55);
+  --shadow:0 6px 18px rgba(0,0,0,.18);
+  --radius:14px;
+}
+    .wm-logo{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+}
+.wm-logo img{
+  position:absolute;
+  top:50%; left:50%;
+  transform: translate(-50%, -50%) rotate(0deg);
+  width: clamp(600px,80vmin,1400px);
+  opacity:.14;
+  mix-blend-mode: normal;
+  filter: grayscale(20%) saturate(120%) contrast(105%);
+}
   </style>
 </head>
 <body>
