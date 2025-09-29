@@ -457,7 +457,7 @@ th{
   --resalte:#0c6cbd;
   --ok:#1e8e3e;
   --bg-grad:linear-gradient(to right,#00416A,#E4E5E6);
-  --card: rgba(255,255,255,.9);
+  --card: rgba(255,255,255,.85);   /* 👈 más transparencia */
   --muted:rgba(0,0,0,.55);
   --shadow:0 6px 18px rgba(0,0,0,.18);
   --radius:14px;
@@ -475,6 +475,7 @@ body {
   max-width:900px;
   margin:30px auto;
   background:var(--card);
+  backdrop-filter: blur(8px);   /* 👈 difumina logo debajo */
   color:#222;
   padding:20px;
   border-radius:var(--radius);
@@ -483,14 +484,29 @@ body {
   z-index:1;
 }
 
-label { display:block; margin-top:10px; font-weight:bold; }
+h2 {
+  color: var(--azul);
+  margin-top:0;
+}
+
+label { display:block; margin-top:10px; font-weight:600; }
 input,select { padding:8px; border:1px solid #ccc; border-radius:6px; }
 #buscador { width:70%; }
-#btnBuscarCodigo,#btnBuscarNombre { padding:8px 12px; margin-left:6px; cursor:pointer; }
 
-table { width:100%; border-collapse:collapse; margin-top:10px; }
-th,td { border:1px solid #ccc; padding:6px; text-align:left; }
-th { background:#eee; }
+table {
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+}
+th,td {
+  border:1px solid #ccc;
+  padding:8px;
+  text-align:center;
+}
+th {
+  background: var(--azul);
+  color:white;
+}
 
 button {
   margin-top:10px;
@@ -499,6 +515,7 @@ button {
   border-radius:6px;
   cursor:pointer;
 }
+
 .boton, .btn {
   background:var(--resalte);
   color:white;
@@ -527,7 +544,7 @@ button {
 .close { float:right; font-size:28px; cursor:pointer; }
 #listaResultados .item { padding:8px; border-bottom:1px solid #eee; cursor:pointer; }
 #listaResultados .item:hover { background:#f0f0f0; }
-.footer { text-align:center; margin-top:20px; font-size:14px; color:#555; }
+.footer { text-align:center; margin-top:20px; font-size:14px; color:#eee; }
 
 .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px 30px; }
 .buscador-group,.cantidad-group { display:flex; gap:8px; align-items:center; }
@@ -541,10 +558,11 @@ button {
   position:absolute; top:50%; left:50%;
   transform: translate(-50%, -50%) rotate(0deg);
   width: clamp(600px,80vmin,1400px);
-  opacity:.14;
+  opacity:.12;                   /* 👈 transparencia */
   mix-blend-mode: normal;
   filter: grayscale(20%) saturate(120%) contrast(105%);
 }
+
   </style>
 </head>
 <body>
@@ -612,5 +630,8 @@ button {
   </div>
 
   <div class="footer">Powered by <b>PROVSOFT</b></div>
+  <div class="wm-logo">
+  <img src="logo-proveedora.webp" alt="Logo Proveedora">
+</div>
 </body>
 </html>
