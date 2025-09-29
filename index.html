@@ -413,42 +413,58 @@ th{
       document.getElementById("modalResultados").style.display = "none";
     }
 
-    // ---------------- INIT ----------------
-    document.addEventListener("DOMContentLoaded", async ()=>{
-      await syncProductos();
-      document.getElementById("buscador").focus();
+// ---------------- INIT ----------------
+document.addEventListener("DOMContentLoaded", async ()=>{
+  await syncProductos();
+  document.getElementById("buscador").focus();
 
-      // Listeners (ya con DOM cargado)
-      document.getElementById("ruta").addEventListener("change", cargarVendedor);
-      document.getElementById("btnBuscarNombre").addEventListener("click", ()=>{
-        document.getElementById("modalResultados").style.display = "block";
-        document.getElementById("busquedaNombre").focus();
-      });
-      document.getElementById("btnBuscarCodigo").addEventListener("click", buscarPorCodigo);
-      document.getElementById("cerrarModal").addEventListener("click", cerrarModal);
-      document.getElementById("btnAnterior").addEventListener("click", anteriorPagina);
-      document.getElementById("btnSiguiente").addEventListener("click", siguientePagina);
-      document.getElementById("btnTraspaso").addEventListener("click", finalizarTraspaso);
-      document.getElementById("busquedaNombre").addEventListener("input", buscarPorNombre);
-      document.getElementById("btnAgregar").addEventListener("click", agregarItem);
-      // y si quieres exponer por si algún html legacy lo llama:
-      window.agregarItem = agregarItem;
+  // Cambio de ruta → carga vendedor
+  document.getElementById("ruta").addEventListener("change", cargarVendedor);
 
+  // Abrir modal de búsqueda y ejecutar búsqueda inicial
+  document.getElementById("btnBuscarNombre").addEventListener("click", ()=>{
+    document.getElementById("modalResultados").style.display = "block";
+    document.getElementById("busquedaNombre").focus();
+    buscarPorNombre();   // 👈 ejecuta búsqueda al abrir modal
+  });
 
-      // Enter en buscador de código
-      document.getElementById("buscador").addEventListener("keypress",(e)=>{
-        if(e.key==="Enter"){ e.preventDefault(); buscarPorCodigo(); }
-      });
+  // Buscar por código
+  document.getElementById("btnBuscarCodigo").addEventListener("click", buscarPorCodigo);
 
-      // Enter en cantidad para agregar item
-      document.getElementById("cantidad").addEventListener("keypress",(e)=>{
-        if(e.key==="Enter"){ e.preventDefault(); agregarItem(); }
-      });
+  // Cerrar modal y limpiar
+  document.getElementById("cerrarModal").addEventListener("click", ()=>{
+    cerrarModal();
+    document.getElementById("busquedaNombre").value = "";
+    document.getElementById("listaResultados").innerHTML = "";
+  });
 
-      // Exponer funciones para botones inline
-      window.agregarItem  = agregarItem;
-      window.eliminarItem = eliminarItem;
-    });
+  // Paginación
+  document.getElementById("btnAnterior").addEventListener("click", anteriorPagina);
+  document.getElementById("btnSiguiente").addEventListener("click", siguientePagina);
+
+  // Finalizar traspaso
+  document.getElementById("btnTraspaso").addEventListener("click", finalizarTraspaso);
+
+  // Buscar mientras escribes en el input de nombre
+  document.getElementById("busquedaNombre").addEventListener("input", buscarPorNombre);
+
+  // Agregar producto a la lista
+  document.getElementById("btnAgregar").addEventListener("click", agregarItem);
+
+  // Enter en buscador de código → busca producto
+  document.getElementById("buscador").addEventListener("keypress",(e)=>{
+    if(e.key==="Enter"){ e.preventDefault(); buscarPorCodigo(); }
+  });
+
+  // Enter en cantidad → agrega item
+  document.getElementById("cantidad").addEventListener("keypress",(e)=>{
+    if(e.key==="Enter"){ e.preventDefault(); agregarItem(); }
+  });
+
+  // Exponer funciones para botones inline (por compatibilidad)
+  window.agregarItem  = agregarItem;
+  window.eliminarItem = eliminarItem;
+});
   </script>
 
   <style>
