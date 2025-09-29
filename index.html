@@ -552,7 +552,10 @@ button {
 .cantidad-group input { width:80px; }
 
 .wm-logo {
-  position:fixed; inset:0; z-index:0; pointer-events:none;
+  position:fixed;
+  inset:0;
+  z-index:-1;       /* 👈 queda al fondo */
+  pointer-events:none;
 }
 .wm-logo img {
   position:absolute; top:50%; left:50%;
