@@ -91,57 +91,48 @@ const q = query(
     }
 
     // ---------------- BÚSQUEDAS ----------------
-    async function buscarPorNombre() {
-      const termino = document.getElementById("busquedaNombre").value.trim().toLowerCase();
-      if (!termino) {
-        document.getElementById("listaResultados").innerHTML = "";
-        return;
-      }
+async function buscarPorNombre() {
+  const termino = document.getElementById("busquedaNombre").value.trim().toLowerCase();
+  if (!termino) {
+    document.getElementById("listaResultados").innerHTML = "";
+    return;
+  }
 
-      const productos = await getAllProductos();
-      resultadosBusqueda = productos.filter(p =>
-        p.concepto && p.concepto.toLowerCase().includes(termino)
-      );
+  const productos = await getAllProductos();
 
-      paginaActual = 0;
-      mostrarPagina();
-      document.getElementById("modalResultados").style.display = "block";
-    }
+  // 🔎 Filtrar con validación segura
+  resultadosBusqueda = productos.filter(p =>
+    p.concepto && String(p.concepto).toLowerCase().includes(termino)
+  );
 
-    function mostrarPagina() {
-      const lista = document.getElementById("listaResultados");
-      lista.innerHTML = "";
-      const inicio = paginaActual * porPagina;
-      const fin = inicio + porPagina;
-      const pagina = resultadosBusqueda.slice(inicio, fin);
+  paginaActual = 0;
+  mostrarPagina();
+  document.getElementById("modalResultados").style.display = "block";
+}
 
-      pagina.forEach(data => {
-        const item = document.createElement("div");
-        item.className = "item";
-        item.innerText = `${data.concepto} — $${data.precioPublico}`;
-        item.onclick = () => {
-          seleccionarProducto(data);
-          cerrarModal();
-        };
-        lista.appendChild(item);
-      });
+function mostrarPagina() {
+  const lista = document.getElementById("listaResultados");
+  lista.innerHTML = "";
+  const inicio = paginaActual * porPagina;
+  const fin = inicio + porPagina;
+  const pagina = resultadosBusqueda.slice(inicio, fin);
 
-      const totalPags = Math.max(1, Math.ceil(resultadosBusqueda.length / porPagina));
-      document.getElementById("paginacion").innerText = `Página ${paginaActual + 1} de ${totalPags}`;
-    }
+  pagina.forEach(data => {
+    const item = document.createElement("div");
+    item.className = "item";
+    item.innerText = `${data.concepto || "(sin nombre)"} — $${data.precioPublico ?? 0}`;
+    item.onclick = () => {
+      seleccionarProducto(data);
+      cerrarModal();
+    };
+    lista.appendChild(item);
+  });
 
-    function siguientePagina() {
-      if ((paginaActual + 1) * porPagina < resultadosBusqueda.length) {
-        paginaActual++;
-        mostrarPagina();
-      }
-    }
-    function anteriorPagina() {
-      if (paginaActual > 0) {
-        paginaActual--;
-        mostrarPagina();
-      }
-    }
+  const totalPags = Math.max(1, Math.ceil(resultadosBusqueda.length / porPagina));
+  document.getElementById("paginacion").innerText =
+    `Página ${paginaActual + 1} de ${totalPags}`;
+}
+
 // ---------------- EQUIVALENCIAS ----------------
 async function buscarEnEquivalencias(codigoInput) {
   const codigoStr = String(codigoInput).trim();
@@ -157,7 +148,7 @@ async function buscarEnEquivalencias(codigoInput) {
   return null;
 }
 
-    // ---------------- PRODUCTO ----------------
+// ---------------- POR CÓDIGO ----------------
 async function buscarPorCodigo() {
   const codigo = document.getElementById("buscador").value.trim();
   if (!codigo) return;
@@ -168,7 +159,7 @@ async function buscarPorCodigo() {
   const productos = await getAllProductos();
   let encontrado = productos.find(p => String(p.codigoBarra) === String(codigo));
 
-  // 2. Si no está en cache, buscar en Firestore por codigoBarra
+  // 2. Si no está en cache, buscar en Firestore
   if (!encontrado) {
     console.log("⚠️ No está en cache, buscando en Firestore...");
     const qProd = query(
@@ -179,11 +170,11 @@ async function buscarPorCodigo() {
     const snap = await getDocs(qProd);
     if (!snap.empty) {
       encontrado = { id: snap.docs[0].id, ...snap.docs[0].data() };
-      await saveProductos([encontrado]); // lo guardo en cache
+      await saveProductos([encontrado]); // guardar en cache
     }
   }
 
-  // 3. Si tampoco se encontró, buscar en equivalentes
+  // 3. Buscar en equivalentes si no se encontró
   if (!encontrado) {
     console.log("🔄 Buscando en equivalentes...");
     encontrado = await buscarEnEquivalencias(codigo);
@@ -192,12 +183,12 @@ async function buscarPorCodigo() {
     }
   }
 
-  // 4. Mostrar resultado
+  // 4. Mostrar resultado o error
   if (encontrado) {
     console.log("✅ Producto encontrado:", encontrado);
     seleccionarProducto(encontrado);
   } else {
-    console.log("❌ Código no encontrado en Firestore ni en cache");
+    console.log("❌ Código no encontrado");
     document.getElementById("preview").innerText = "❌ No encontrado";
     document.getElementById("codigoSel").value = "";
     document.getElementById("conceptoSel").value = "";
@@ -206,7 +197,6 @@ async function buscarPorCodigo() {
 
   document.getElementById("buscador").value = "";
 }
-
     function seleccionarProducto(data) {
       document.getElementById("codigoSel").value = data.codigoBarra;
       document.getElementById("conceptoSel").value = data.concepto || "";
