@@ -354,7 +354,11 @@
 
       document.getElementById("ruta").addEventListener("change", cargarVendedor);
       document.getElementById("btnBuscarCodigo").addEventListener("click", buscarPorCodigo);
-      document.getElementById("btnBuscarNombre").addEventListener("click", buscarPorNombre);
+      document.getElementById("btnBuscarNombre").addEventListener("click", () => {
+  document.getElementById("modalResultados").style.display = "block";
+  document.getElementById("busquedaNombre").focus();
+  buscarPorNombre(); // ejecuta búsqueda inicial
+});
       document.getElementById("cerrarModal").addEventListener("click", cerrarModal);
       document.getElementById("btnAnterior").addEventListener("click", anteriorPagina);
       document.getElementById("btnSiguiente").addEventListener("click", siguientePagina);
