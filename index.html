@@ -248,6 +248,49 @@ async function buscarPorCodigo() {
       carrito.splice(index, 1);
       renderTabla();
     }
+    // ---------------- PAGINACIÓN ----------------
+function anteriorPagina() {
+  if (paginaActual > 0) {
+    paginaActual--;
+    mostrarPagina();
+  }
+}
+
+function siguientePagina() {
+  const totalPags = Math.max(1, Math.ceil(resultadosBusqueda.length / porPagina));
+  if (paginaActual < totalPags - 1) {
+    paginaActual++;
+    mostrarPagina();
+  }
+}
+
+// ---------------- TABLA DE CARRITO ----------------
+function renderTabla() {
+  const tabla = document.getElementById("tabla");
+  tabla.innerHTML = "";
+
+  if (carrito.length === 0) {
+    tabla.innerHTML = `<tr><td colspan="5">No hay productos agregados</td></tr>`;
+    return;
+  }
+
+  carrito.forEach((item, i) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${item.codigo}</td>
+      <td>${item.concepto}</td>
+      <td>${item.cantidad}</td>
+      <td>$${item.precio.toFixed(2)}</td>
+      <td><button onclick="eliminarItem(${i})">❌</button></td>
+    `;
+    tabla.appendChild(row);
+  });
+}
+
+function eliminarItem(index) {
+  carrito.splice(index, 1);
+  renderTabla();
+}
 
     // ---------------- FINALIZAR TRASPASO ----------------
     async function finalizarTraspaso() {
