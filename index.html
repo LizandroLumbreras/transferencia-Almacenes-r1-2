@@ -347,9 +347,9 @@
       document.getElementById("modalResultados").style.display = "none";
     }
 
+    // ---------------- INIT ----------------
     document.addEventListener("DOMContentLoaded", async ()=>{
       await syncProductos();
-      document.getElementById("buscador").focus();
 
       document.getElementById("ruta").addEventListener("change", cargarVendedor);
       document.getElementById("btnBuscarNombre").addEventListener("click", buscarPorNombre);
@@ -366,6 +366,10 @@
       document.getElementById("cantidad").addEventListener("keypress",(e)=>{
         if(e.key==="Enter"){ e.preventDefault(); agregarItem(); }
       });
+
+      // ✅ mover focus al final y protegido
+      const buscador = document.getElementById("buscador");
+      if (buscador) buscador.focus();
     });
 
     window.agregarItem = agregarItem;
