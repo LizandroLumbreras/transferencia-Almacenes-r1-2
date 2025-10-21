@@ -63,25 +63,23 @@
     }
 
     // ---------- SINCRONIZACIÓN ----------
-    async function syncProductos() {
-      try {
-        const ultimaSync = localStorage.getItem("ultimaSync") || "2000-01-01T00:00:00.000Z";
-        const q = query(
-          collection(db, "productos"),
-          where("activo", "==", true),
-          where("updatedAt", ">", ultimaSync)
-        );
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          const lista = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          await saveProductos(lista);
-          localStorage.setItem("ultimaSync", new Date().toISOString());
-          console.log(`Catálogo actualizado: ${lista.length} productos`);
-        } else console.log("Sin cambios en catálogo local");
-      } catch (err) {
-        console.warn("Error al sincronizar:", err.message);
-      }
+async function syncProductos() {
+  try {
+    const q = query(collection(db, "productos"), where("activo", "==", true));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const lista = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      await saveProductos(lista);
+      localStorage.setItem("ultimaSync", new Date().toISOString());
+      console.log(`Catálogo actualizado: ${lista.length} productos`);
+    } else {
+      console.log("No hay productos activos");
     }
+  } catch (err) {
+    console.warn("Error al sincronizar:", err.message);
+  }
+}
+
     // ---------- BÚSQUEDAS ----------
 async function buscarPorCodigo() {
   const codigo = document.getElementById("buscador").value.trim();
