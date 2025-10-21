@@ -82,22 +82,43 @@ async function syncProductos() {
 
     // ---------- BÚSQUEDAS ----------
 async function buscarPorCodigo() {
-  const codigo = document.getElementById("buscador").value.trim();
+  let codigo = document.getElementById("buscador").value.trim();
   if (!codigo) return;
+
+  let pesoDetectado = null;
+
+  // Detecta códigos de balanza: 20 + producto + peso + verificador
+  if (codigo.length === 13 && codigo.startsWith("20")) {
+    const base = codigo.substring(0, 7); // "2000004"
+    const pesoStr = codigo.substring(7, 12); // "24560"
+    pesoDetectado = parseFloat(pesoStr) / 1000; // → 24.560
+    codigo = base;
+  }
 
   const productos = await getAllProductos();
 
-  // comparación segura en string
   const encontrado = productos.find(p => {
     const codBarra = String(p.codigoBarra || "");
-    const equivalentes = Array.isArray(p.codigosEquivalentes) ? p.codigosEquivalentes.map(String) : [];
+    const equivalentes = Array.isArray(p.codigosEquivalentes)
+      ? p.codigosEquivalentes.map(String)
+      : [];
     return codBarra === codigo || equivalentes.includes(codigo);
   });
 
   if (encontrado) {
-    const textoExtra = String(encontrado.codigoBarra) !== codigo ? ` (equivalente de ${encontrado.codigoBarra})` : "";
-    document.getElementById("preview").innerText = `✅ ${encontrado.concepto}${textoExtra}`;
+    const textoExtra = String(encontrado.codigoBarra) !== codigo
+      ? ` (equivalente de ${encontrado.codigoBarra})`
+      : "";
+
+    document.getElementById("preview").innerText =
+      `✅ ${encontrado.concepto}${textoExtra}`;
+
     seleccionarProducto(encontrado);
+
+    // si hay peso en el código, autollenar la cantidad
+    if (pesoDetectado) {
+      document.getElementById("cantidad").value = pesoDetectado.toFixed(3);
+    }
   } else {
     document.getElementById("preview").innerText = "❌ No encontrado";
   }
