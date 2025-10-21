@@ -89,19 +89,18 @@ async function buscarPorCodigo() {
 
   const productos = await getAllProductos();
 
-  // Buscar coincidencia exacta o en codigosEquivalentes[]
-  const encontrado = productos.find(p =>
-    p.codigoBarra === codigo ||
-    (Array.isArray(p.codigosEquivalentes) && p.codigosEquivalentes.includes(codigo))
-  );
+  // comparación segura en string
+  const encontrado = productos.find(p => {
+    const codBarra = String(p.codigoBarra || "");
+    const equivalentes = Array.isArray(p.codigosEquivalentes) ? p.codigosEquivalentes.map(String) : [];
+    return codBarra === codigo || equivalentes.includes(codigo);
+  });
 
-if (encontrado) {
-  let textoExtra = encontrado.codigoBarra !== codigo ? ` (equivalente de ${encontrado.codigoBarra})` : "";
-  document.getElementById("preview").innerText = `✅ ${encontrado.concepto}${textoExtra}`;
-  seleccionarProducto(encontrado);
-}
-
-  else {
+  if (encontrado) {
+    const textoExtra = String(encontrado.codigoBarra) !== codigo ? ` (equivalente de ${encontrado.codigoBarra})` : "";
+    document.getElementById("preview").innerText = `✅ ${encontrado.concepto}${textoExtra}`;
+    seleccionarProducto(encontrado);
+  } else {
     document.getElementById("preview").innerText = "❌ No encontrado";
   }
 
